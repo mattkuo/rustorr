@@ -7,7 +7,6 @@ pub enum Token {
     Str(String),
     StartDict,
     StartVec,
-    Separator,
     End,
 }
 
@@ -40,7 +39,7 @@ impl <I: Iterator<Item=u8>> BencodeTokenizer<I> {
             result *= -1;
         }
 
-        return result;
+        result
     }
 
     fn parseStr(&mut self, first_n: char) -> String {
@@ -67,7 +66,7 @@ impl <I: Iterator<Item=u8>> BencodeTokenizer<I> {
             result.push(next_char);
         }
 
-        return result;
+        result
     }
 }
 
@@ -85,12 +84,11 @@ impl <I: Iterator<Item=u8>> Iterator for BencodeTokenizer<I> {
             'l' => Some(Token::StartVec),
             'd' => Some(Token::StartDict),
             'e' => Some(Token::End),
-            ':' => Some(Token::Separator),
             _ => None
         };
 
         println!("{:?}", result);
 
-        return result;
+        result
     }
 }

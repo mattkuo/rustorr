@@ -22,42 +22,59 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
     }
 
     pub fn decode(&mut self) -> Bencode {
-        if let Some(token) = self.tokenizer.next() {
-            let value: Bencode = match token {
-                Token::Int(num) => Bencode::Int(0),
-                Token::Str(string) => Bencode::Str("hello".to_string()),
-                Token::StartDict => self.decode_dict(),
-                Token::StartVec => Bencode::Vector(Vec::new()),
-                Token::Separator => Bencode::Int(0),
-                Token::End => Bencode::Int(0),
-            };
 
-            return value;
-        } else {
-            return Bencode::Int(0);
-        }
+        let value: Option<Token> = match self.tokenizer.next() {
+            Some(Token::Int(num)) => Bencode::Int(num),
+            Some(Token::Str(string)) => Bencode::Str(string),
+            Some(Token::StartDict) => self.decode_dict(),
+            Some(Token::StartVec) => self.decode_vec(),
+            Some(Token::End) => Bencode::Int(0),
+            _ => Bencode::Int(0),
+        };
+
+        value
     }
 
     fn decode_dict(&mut self) -> Bencode {
-        let mut map = HashMap::new();
+        let mut map: HashMap<String, Bencode> = HashMap::new();
 
         while let Some(token) = self.tokenizer.next() {
-            let key = match token {
+            let key: String = match token {
                 Token::Str(string) => string,
                 Token::End => return Bencode::Dict(map),
                 _ => continue,
             };
 
-            let value = match self.tokenizer.next() {
+            let value: Bencode = match self.tokenizer.next() {
                 Some(Token::Int(num)) => Bencode::Int(num),
                 Some(Token::Str(string)) => Bencode::Str(string),
-                Some(Token::End) => return Bencode::Dict(map),
+                Some(Token::StartDict) => self.decode_dict(),
+                Some(Token::StartVec) => self.decode_vec(),
+                Some(Token::End) => break,
                 _ => continue,
             };
 
             map.insert(key, value);
         }
 
-        return Bencode::Dict(map);
+        Bencode::Dict(map)
+    }
+
+    fn decode_vec(&mut self) -> Bencode {
+        let mut vec: Vec<Bencode> = Vec::new();
+
+        while let Some(token) = self.tokenizer.next() {
+            let val: Bencode = match token {
+                Token::Int(int) => Bencode::Int(int),
+                Token::Str(string) => Bencode::Str(string),
+                Token::StartDict =>  self.decode_dict(),
+                Token::StartVec => self.decode_vec(),
+                Token::End => break,
+            };
+
+            vec.push(val);
+        }
+
+        Bencode::Vector(vec)
     }
 }
