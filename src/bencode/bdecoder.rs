@@ -15,7 +15,7 @@ pub struct Bdecoder<I> {
 }
 
 impl <I: Iterator<Item=u8>> Bdecoder<I> {
-    pub fn new(mut iter: I) -> Bdecoder<I> {
+    pub fn new(iter: I) -> Bdecoder<I> {
         Bdecoder {
             tokenizer: BencodeTokenizer::new(iter),
         }
@@ -23,16 +23,12 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
 
     pub fn decode(&mut self) -> Bencode {
 
-        let value: Option<Token> = match self.tokenizer.next() {
-            Some(Token::Int(num)) => Bencode::Int(num),
-            Some(Token::Str(string)) => Bencode::Str(string),
-            Some(Token::StartDict) => self.decode_dict(),
-            Some(Token::StartVec) => self.decode_vec(),
-            Some(Token::End) => Bencode::Int(0),
-            _ => Bencode::Int(0),
-        };
+        // TODO: Error checking
+        let token: Token = self.tokenizer.next().unwrap();
+        let bencode_option: Option<Bencode>  = self.token_to_bencode(token);
 
-        value
+        // TODO: return error on Token::End
+        bencode_option.unwrap()
     }
 
     fn decode_dict(&mut self) -> Bencode {
@@ -45,16 +41,15 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
                 _ => continue,
             };
 
-            let value: Bencode = match self.tokenizer.next() {
-                Some(Token::Int(num)) => Bencode::Int(num),
-                Some(Token::Str(string)) => Bencode::Str(string),
-                Some(Token::StartDict) => self.decode_dict(),
-                Some(Token::StartVec) => self.decode_vec(),
-                Some(Token::End) => break,
-                _ => continue,
-            };
+            // TODO: Error checking here
+            let token: Token = self.tokenizer.next().unwrap();
+            let bencode_option: Option<Bencode>  = self.token_to_bencode(token);
 
-            map.insert(key, value);
+            if let Some(bencode) = bencode_option {
+                map.insert(key, bencode);
+            } else {
+                break;
+            }
         }
 
         Bencode::Dict(map)
@@ -64,17 +59,27 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
         let mut vec: Vec<Bencode> = Vec::new();
 
         while let Some(token) = self.tokenizer.next() {
-            let val: Bencode = match token {
-                Token::Int(int) => Bencode::Int(int),
-                Token::Str(string) => Bencode::Str(string),
-                Token::StartDict =>  self.decode_dict(),
-                Token::StartVec => self.decode_vec(),
-                Token::End => break,
-            };
+            let bencode_option: Option<Bencode> = self.token_to_bencode(token);
 
-            vec.push(val);
+            if let Some(bencode) = bencode_option {
+                vec.push(bencode);
+            } else {
+                break;
+            }
         }
 
         Bencode::Vector(vec)
+    }
+
+    fn token_to_bencode(&mut self, token: Token) -> Option<Bencode> {
+        let bencode: Bencode = match token {
+            Token::Int(int) => Bencode::Int(int),
+            Token::Str(string) => Bencode::Str(string),
+            Token::StartDict =>  self.decode_dict(),
+            Token::StartVec => self.decode_vec(),
+            Token::End => return None,
+        };
+
+        Some(bencode)
     }
 }

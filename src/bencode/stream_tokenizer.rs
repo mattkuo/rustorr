@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::collections::VecDeque;
-
 #[derive(Debug)]
 pub enum Token {
     Int(i64),
@@ -15,13 +12,13 @@ pub struct BencodeTokenizer<I> {
 }
 
 impl <I: Iterator<Item=u8>> BencodeTokenizer<I> {
-    pub fn new(mut reader: I) -> BencodeTokenizer<I> {
+    pub fn new(reader: I) -> BencodeTokenizer<I> {
         BencodeTokenizer {
             iter: reader,
         }
     }
 
-    fn parseInt(&mut self) -> i64 {
+    fn parse_int(&mut self) -> i64 {
         let mut result: i64 = 0;
         let mut current: char = self.iter.next().unwrap() as char;
         let is_negative: bool = current == '-';
@@ -42,7 +39,7 @@ impl <I: Iterator<Item=u8>> BencodeTokenizer<I> {
         result
     }
 
-    fn parseStr(&mut self, first_n: char) -> String {
+    fn parse_string(&mut self, first_n: char) -> String {
         let mut length: u32 = first_n.to_digit(10).unwrap();
 
         while let Some(c) = self.iter.next() {
@@ -79,8 +76,8 @@ impl <I: Iterator<Item=u8>> Iterator for BencodeTokenizer<I> {
         };
 
         let result: Option<Token> = match next_char {
-            'i' => Some(Token::Int(self.parseInt())),
-            n @ '0' ... '9' => Some(Token::Str(self.parseStr(n))),
+            'i' => Some(Token::Int(self.parse_int())),
+            n @ '0' ... '9' => Some(Token::Str(self.parse_string(n))),
             'l' => Some(Token::StartVec),
             'd' => Some(Token::StartDict),
             'e' => Some(Token::End),
