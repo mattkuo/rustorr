@@ -1,10 +1,31 @@
-#[derive(Debug)]
+use std::{fmt, str};
+use self::Token::*;
+
 pub enum Token {
     Int(i64),
-    Str(String),
+    Str(Vec<u8>),
     StartDict,
     StartVec,
     End,
+}
+
+impl fmt::Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match *self {
+            Int(num) => write!(f, "Int({})", num),
+            Str(ref vec) => {
+                let string = str::from_utf8(vec);
+                if string.is_ok() {
+                    return write!(f, "Str({})", string.unwrap());
+                } else {
+                    return write!(f, "ByteStr({:?})", vec);
+                }
+            },
+            StartDict => write!(f, "StartDict"),
+            StartVec => write!(f, "StartVec"),
+            End => write!(f, "End"),
+        }
+    }
 }
 
 pub struct BencodeTokenizer<I> {
@@ -39,7 +60,7 @@ impl <I: Iterator<Item=u8>> BencodeTokenizer<I> {
         result
     }
 
-    fn parse_string(&mut self, first_n: char) -> String {
+    fn parse_string(&mut self, first_n: char) -> Vec<u8> {
         let mut length: u32 = first_n.to_digit(10).unwrap();
 
         while let Some(c) = self.iter.next() {
@@ -53,13 +74,13 @@ impl <I: Iterator<Item=u8>> BencodeTokenizer<I> {
         }
 
         if length == 0 {
-            return String::new();
+            return Vec::new();
         }
         
-        let mut result: String = String::with_capacity(length as usize);
+        let mut result: Vec<u8> = Vec::with_capacity(length as usize);
 
         while result.len() < result.capacity() {
-            let next_char: char = self.iter.next().unwrap() as char;
+            let next_char: u8 = self.iter.next().unwrap();
             result.push(next_char);
         }
 
@@ -76,11 +97,11 @@ impl <I: Iterator<Item=u8>> Iterator for BencodeTokenizer<I> {
         };
 
         let result: Option<Token> = match next_char {
-            'i' => Some(Token::Int(self.parse_int())),
-            n @ '0' ... '9' => Some(Token::Str(self.parse_string(n))),
-            'l' => Some(Token::StartVec),
-            'd' => Some(Token::StartDict),
-            'e' => Some(Token::End),
+            'i' => Some(Int(self.parse_int())),
+            n @ '0' ... '9' => Some(Str(self.parse_string(n))),
+            'l' => Some(StartVec),
+            'd' => Some(StartDict),
+            'e' => Some(End),
             _ => None
         };
 

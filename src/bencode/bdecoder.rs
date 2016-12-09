@@ -7,7 +7,7 @@ pub enum Bencode {
     Dict(HashMap<String, Bencode>),
     Vector(Vec<Bencode>),
     Int(i64),
-    Str(String),
+    Str(Vec<u8>),
 }
 
 pub struct Bdecoder<I> {
@@ -36,7 +36,7 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
 
         while let Some(token) = self.tokenizer.next() {
             let key: String = match token {
-                Token::Str(string) => string,
+                Token::Str(string) => String::from_utf8(string).unwrap(),
                 Token::End => return Bencode::Dict(map),
                 _ => continue,
             };
