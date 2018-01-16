@@ -23,9 +23,9 @@ fn main() {
         return;
     };
 
-    let mut string = String::new();
-    File::open(input).unwrap().read_to_string(&mut string).unwrap();
+    let mut file_buffer = Vec::new();
+    File::open(input).unwrap().read_to_end(&mut file_buffer).unwrap();
     
-    let mut decoder = rustorr::bencode::bdecoder::Bdecoder::new(string.bytes());
+    let mut decoder = rustorr::bencode::bdecoder::Bdecoder::new(file_buffer.iter().cloned());
     println!("{:?}", decoder.decode());
 }

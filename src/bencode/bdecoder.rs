@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use bencode::stream_tokenizer::BencodeTokenizer;
 use bencode::stream_tokenizer::Token;
 
 #[derive(Debug)]
 pub enum Bencode {
-    Dict(HashMap<String, Bencode>),
+    Dict(BTreeMap<String, Bencode>),
     Vector(Vec<Bencode>),
     Int(i64),
     Str(String),
@@ -32,7 +32,7 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
     }
 
     fn decode_dict(&mut self) -> Bencode {
-        let mut map: HashMap<String, Bencode> = HashMap::new();
+        let mut map: BTreeMap<String, Bencode> = BTreeMap::new();
 
         while let Some(token) = self.tokenizer.next() {
             let key: String = match token {
