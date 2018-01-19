@@ -3,7 +3,7 @@ pub enum Token {
     Int(i64),
     Str(String),
     StartDict,
-    StartVec,
+    StartList,
     End,
 }
 
@@ -78,13 +78,11 @@ impl <I: Iterator<Item=u8>> Iterator for BencodeTokenizer<I> {
         let result: Option<Token> = match next_char {
             'i' => Some(Token::Int(self.parse_int())),
             n @ '0' ... '9' => Some(Token::Str(self.parse_string(n))),
-            'l' => Some(Token::StartVec),
+            'l' => Some(Token::StartList),
             'd' => Some(Token::StartDict),
             'e' => Some(Token::End),
             _ => None
         };
-
-        println!("{:?}", result);
 
         result
     }

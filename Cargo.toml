@@ -4,4 +4,6 @@ version = "0.1.0"
 authors = ["matthewkuo"]
 
 [dependencies]
+url = "1.6.0"
 getopts = "0.2"
+reqwest = "0.8.2"

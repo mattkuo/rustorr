@@ -1,27 +1,20 @@
 use std::collections::BTreeMap;
 use bencode::stream_tokenizer::BencodeTokenizer;
 use bencode::stream_tokenizer::Token;
+use bencode::bencode::Bencode;
 
-#[derive(Debug)]
-pub enum Bencode {
-    Dict(BTreeMap<String, Bencode>),
-    Vector(Vec<Bencode>),
-    Int(i64),
-    Str(String),
-}
-
-pub struct Bdecoder<I> {
+pub struct BencodeDeserializer<I> {
     tokenizer: BencodeTokenizer<I>,
 }
 
-impl <I: Iterator<Item=u8>> Bdecoder<I> {
-    pub fn new(iter: I) -> Bdecoder<I> {
-        Bdecoder {
+impl <I: Iterator<Item=u8>> BencodeDeserializer<I> {
+    pub fn new(iter: I) -> BencodeDeserializer<I> {
+        BencodeDeserializer {
             tokenizer: BencodeTokenizer::new(iter),
         }
     }
 
-    pub fn decode(&mut self) -> Bencode {
+    pub fn deserialize(&mut self) -> Bencode {
 
         // TODO: Error checking
         let token: Token = self.tokenizer.next().unwrap();
@@ -31,7 +24,7 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
         bencode_option.unwrap()
     }
 
-    fn decode_dict(&mut self) -> Bencode {
+    fn deserialize_dict(&mut self) -> Bencode {
         let mut map: BTreeMap<String, Bencode> = BTreeMap::new();
 
         while let Some(token) = self.tokenizer.next() {
@@ -55,7 +48,7 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
         Bencode::Dict(map)
     }
 
-    fn decode_vec(&mut self) -> Bencode {
+    fn deserialize_list(&mut self) -> Bencode {
         let mut vec: Vec<Bencode> = Vec::new();
 
         while let Some(token) = self.tokenizer.next() {
@@ -68,15 +61,15 @@ impl <I: Iterator<Item=u8>> Bdecoder<I> {
             }
         }
 
-        Bencode::Vector(vec)
+        Bencode::List(vec)
     }
 
     fn token_to_bencode(&mut self, token: Token) -> Option<Bencode> {
         let bencode: Bencode = match token {
             Token::Int(int) => Bencode::Int(int),
             Token::Str(string) => Bencode::Str(string),
-            Token::StartDict =>  self.decode_dict(),
-            Token::StartVec => self.decode_vec(),
+            Token::StartDict =>  self.deserialize_dict(),
+            Token::StartList => self.deserialize_list(),
             Token::End => return None,
         };
 
