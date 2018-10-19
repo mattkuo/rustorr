@@ -32,7 +32,7 @@ fn main() {
     let mut file_buffer = Vec::new();
     File::open(input).unwrap().read_to_end(&mut file_buffer).unwrap();
     
-    let mut decoder = BencodeDeserializer::new(file_buffer.iter().cloned());
+    let mut decoder = BencodeDeserializer::new(file_buffer.into_iter());
 
     let bencoded = decoder.deserialize();
 

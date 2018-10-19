@@ -55,9 +55,9 @@ impl BencodeSerializer {
         result
     }
 
-    fn serialize_string(&self, string: &str) -> String {
+    fn serialize_string(&self, string: &[u8]) -> String {
         let mut result = String::new();
-        write!(&mut result, "{}:{}", string.len(), string).unwrap();
+        write!(&mut result, "{}:{:?}", string.len(), string).unwrap();
         result
     }
 }

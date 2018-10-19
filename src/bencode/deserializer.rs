@@ -29,7 +29,7 @@ impl <I: Iterator<Item=u8>> BencodeDeserializer<I> {
 
         while let Some(token) = self.tokenizer.next() {
             let key: String = match token {
-                Token::Str(string) => string,
+                Token::Str(string) => String::from_utf8(string).unwrap(),
                 Token::End => return Bencode::Dict(map),
                 _ => continue,
             };
